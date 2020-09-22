@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+<title>Creative Coding Fall 2020 - Project3</title>
+<meta charset="utf-8">
+
+<!-- CSS -->
+<link href="clock.css" rel="stylesheet">
+
+<!-- libraries -->
+<script type="text/javascript" src="js/d3.js"></script>
+
+<!-- my code libraries -->
+<script type="text/javascript" src="js/today.js"></script>
+<script type="text/javascript" src="js/suncalc.js"></script>
+<script type="text/javascript" src="js/helper.js"></script>
+
+
+<body>
+<script>
+
+var radians = 0.0174532925,
+  	clockRadius = 200,
+  	margin = 50,
+  	width = (clockRadius+margin)*2,
+    height = (clockRadius+margin)*2,
+    sunHandLength = clockRadius - 30,
+    moonHandLength = clockRadius - 30,
+    secondHandLength = clockRadius-12,
+    secondHandBalance = 30,
+    secondTickStart = clockRadius+5;
+    secondTickLength = -15,
+    hourTickStart = clockRadius+5,
+    hourTickLength = 15, // length of hour tick. +24 puts outside the circle
+    secondLabelRadius = clockRadius + 16,
+    secondLabelYOffset = 5,
+    hourLabelRadius = clockRadius - 40,
+    hourLabelYOffset = 7,
+
+    // planet variables
+    mercuryHandLength = clockRadius,
+    venusHandLength = clockRadius,
+    marsHandLength = clockRadius,
+    jupiterHandLength = clockRadius,
+    saturnHandLength = clockRadius,
+    uranusHandLength = clockRadius,
+    neptuneHandLength = clockRadius,
+    plutoHandLength = clockRadius,
+
+    // set latitude and longitude; eventually these will come from getCurrentPosition above...automatic geocoding
+    myLat = 39.904835,
+    myLon = -105.381363,
+    myUTC = -7,
+
+    // current sun info
+    currentTime = new Date();
+    times = SunCalc.getTimes(new Date(), myLat, myLon);
+    sunPosition = SunCalc.getPosition(currentTime, myLat, myLon);
+    sunrisePos = SunCalc.getPosition(times.sunrise, myLat, myLon);
+    sunsetPos = SunCalc.getPosition(times.sunset, myLat, myLon);
+    sunriseAzimuth = sunrisePos.azimuth; // sunrise azimuth in degrees
+    sunriseAzimuthDeg = sunrisePos.azimuth * 180/Math.PI; // sunrise azimuth in degrees
+    sunsetAzimuth = sunsetPos.azimuth; // sunset azimuth in degrees
+    sunsetAzimuthDeg = sunsetPos.azimuth * 180/Math.PI; // sunset azimuth in degrees
+
+var skyScale = d3.scaleLinear()
+	.range([0,360])
+	.domain([0,90]);
+
+var hourScale = d3.scaleLinear()
+	.range([0,360])
+	.domain([0,24]);
+
+var minuteScale = secondScale = d3.scaleLinear()
+	.range([0,360])
+	.domain([0,359]);
+
+var handData = [
+	{
+		type:'sun',
+		value:0,
+		length:-sunHandLength,
+		scale:hourScale
+	},
+	{
+		type:'moon',
+		value:0,
+		length:-sunHandLength,
+		scale:hourScale
+	},
+  {
+    type:'mercury',
+    value:0,
+    length:-sunHandLength,
+    scale:hourScale
+  },
+  {
+    type:'venus',
+    value:0,
+    length:-sunHandLength,
+    scale:hourScale
+  },
+  {
+    type:'mars',
+    value:0,
+    length:-sunHandLength,
+    scale:hourScale
+  },
+  {
+    type:'jupiter',
+    value:0,
+    length:-sunHandLength,
+    scale:hourScale
+  },
+  {
+    type:'saturn',
+    value:0,
+    length:-sunHandLength,
+    scale:hourScale
+  },
+  {
+    type:'uranus',
+    value:0,
+    length:-sunHandLength,
+    scale:hourScale
+  },
+  {
+    type:'neptune',
+    value:0,
+    length:-sunHandLength,
+    scale:hourScale
+  }
+];
+
+function drawClock(){ //create all the clock elements
+	updateData();	//draw them in the correct starting position
+	var svg = d3.select("body").append("svg")
+	    .attr("width", width)
+	    .attr("height", height);
+
+	var face = svg.append('g')
+		.attr('id','clock-face')
+		.attr('transform','translate(' + (clockRadius + margin) + ',' + (clockRadius + margin) + ')');
+
+    face.append('g').attr('id', 'outer-overlay')
+      .append('circle').attr('class','outer-circle')
+      .attr('x',0)
+      .attr('y',0)
+      .attr('r',clockRadius+30)
+      .style("fill", "white")
+      .style("stroke-width", "5px");
+    face.append('g').attr('id', 'outer-overlay2')
+      .append('circle').attr('class','outer-circle2')
+      .attr('x',0)
+      .attr('y',0)
+      .attr('r',clockRadius+5)
+      .style("fill","none")
+      .style("stroke-width","1px");
+    face.append('g').attr('id','outer-overlay3')
+      .append('circle').attr('class','outer-circle3')
+      .attr('x',0)
+      .attr('y',0)
+      .attr('r',clockRadius-10)
+      .style('fill','none')
+      .style('stroke-width','4px');
+    face.append('g').attr('id','outer-overlay4')
+        .append('circle').attr('class','outer-circle4')
+        .attr('x',0)
+        .attr('y',0)
+        .attr('r',clockRadius-40)
+        .style('fill','#000')
+        .style('stroke-width','0px');
+
+    // draw top part of circle - we could use time to denote a color for the sky. maybe an animation of clouds moving across??
+
+    var arcGenerator = d3.arc()
+    	.innerRadius(20)
+    	.outerRadius(clockRadius-45);
+
+    // Generate the path string
+    var skyData = arcGenerator({
+    	startAngle: sunriseAzimuth,
+    	endAngle: sunsetAzimuth
+    });
+
+
+face.append('g').attr('id','sky-overlay')
+    .append('path').attr('class', 'sky-circle')
+    .attr('d',skyData)
+    .style('fill','#aad9f1')
+    .style('stroke-width', '0px');
+
+    // draw bottom part of circle
+
+	//add marks for seconds
+	face.selectAll('.second-tick')
+		.data(d3.range(0,360)).enter()
+			.append('line')
+			.attr('class', 'second-tick')
+			.attr('x1',0)
+			.attr('x2',0)
+			.attr('y1',secondTickStart)
+			.attr('y2',secondTickStart + secondTickLength)
+			.attr('transform',function(d){
+				return 'rotate(' + secondScale(d) + ')';
+			});
+	//and labels
+
+  /*
+	face.selectAll('.second-label')
+		.data(d3.range(30,361,30))
+			.enter()
+			.append('text')
+			.attr('class', 'second-label')
+			.attr('text-anchor','middle')
+			.attr('x',function(d){
+				return secondLabelRadius*Math.sin(secondScale(d)*radians);
+			})
+			.attr('y',function(d){
+				return -secondLabelRadius*Math.cos(secondScale(d)*radians) + secondLabelYOffset;
+			})
+			.text(function(d){
+				return d;
+			});
+    */
+
+	//... and hours
+	face.selectAll('.hour-tick')
+		.data(d3.range(0,26)).enter()
+			.append('line')
+			.attr('class', 'hour-tick')
+			.attr('x1',0)
+			.attr('x2',0)
+			.attr('y1',hourTickStart)
+			.attr('y2',hourTickStart + hourTickLength)
+			.attr('transform',function(d){
+				return 'rotate(' + hourScale(d) + ')';
+			});
+
+      /*
+
+	face.selectAll('.hour-label')
+		.data(d3.range(6,25,6))
+			.enter()
+			.append('text')
+			.attr('class', 'hour-label')
+			.attr('text-anchor','middle')
+			.attr('x',function(d){
+				return hourLabelRadius*Math.sin(hourScale(d)*radians);
+			})
+			.attr('y',function(d){
+				return -hourLabelRadius*Math.cos(hourScale(d)*radians) + hourLabelYOffset;
+			})
+			.text(function(d){
+				return d;
+			});
+      */
+
+  var outerFace = face.append('g').attr('id', 'outer-face');
+
+	var hands = face.append('g').attr('id','clock-hands');
+
+  // center circle - hands cover
+  face.append('g').attr('id','face-overlay')
+		.append('circle').attr('class','hands-cover')
+			.attr('x',0)
+			.attr('y',0)
+			.attr('r',clockRadius/10)
+
+  // center earth symbol (plus sign inside a circle)
+  face.append('g').attr('class','face-overlay')
+    .append('line').attr('class','hands-cover')
+      .attr("x1",0-18)
+      .attr("y1",0)
+      .attr("x2",0+18)
+      .attr("y2",0);
+  face.append('g').attr('class','face-overlay')
+    .append('line').attr('class','hands-cover')
+      .attr("x1",0)
+      .attr("y1",0-18)
+      .attr("x2",0)
+      .attr("y2",0+18);
+
+
+// iterate through hand data variables to position the hands correctly
+hands.selectAll('line')
+		.data(handData)
+			.enter()
+			.append('line')
+			.attr('class', function(d){
+				return d.type + '-hand';
+			})
+			.attr('x1',0)
+			.attr('y1',function(d){
+				return d.balance ? d.balance : 0;
+			})
+			.attr('x2',0)
+			.attr('y2',function(d){
+				return d.length;
+			})
+			.attr('transform',function(d){
+				return 'rotate('+ d.value +')';
+			});
+}
+
+function moveHands(){
+	d3.select('#clock-hands').selectAll('line')
+	.data(handData)
+		.transition()
+		.attr('transform',function(d){
+			return 'rotate('+ d.value +')';
+		});
+}
+
+function findAzimuth(planet) {
+// Azimuth(A): A = arctan(sinH,cosH sinφ - tanδcosφ)
+// φ = phi (geographical latitude)
+// δ = delta (declination)
+// H = hour angle
+// H = theta - alpha ()
+// alpha = right ascension
+// theta = sidereal time
+
+
+}
+
+function updateData(){
+
+  // current time
+  var currentTime = new Date();
+
+  // sun information
+  var times = SunCalc.getTimes(new Date(), myLat, myLon);
+  var sunPosition = SunCalc.getPosition(currentTime, myLat, myLon);
+  var sunrisePos = SunCalc.getPosition(times.sunrise, myLat, myLon);
+  var sunsetPos = SunCalc.getPosition(times.sunset, myLat, myLon);
+  var sunAltitude = sunPosition.altitude; // current sun altitude above the horizon in radians; 0 = horizon; PI/2 = zenith;
+  var sunAzimuth = sunPosition.azimuth; // current sun azimuth position in radians 0 = south; math.PI * 3/4 = NW
+  var sunAzimuthDeg = sunPosition.azimuth * 180/Math.PI; // current sun azimuth position in radians 0 = south; math.PI * 3/4 = NW
+  var sunriseAzimuth = sunrisePos.azimuth; // sunrise azimuth in degrees
+  var sunriseAzimuthDeg = sunrisePos.azimuth * 180/Math.PI; // sunrise azimuth in degrees
+  var sunsetAzimuth = sunsetPos.azimuth; // sunset azimuth in degrees
+  var sunsetAzimuthDeg = sunsetPos.azimuth * 180/Math.PI; // sunset azimuth in degrees
+
+  // moon information
+  var moontimes = SunCalc.getMoonTimes(new Date(), myLat, myLon, myUTC);
+  var moonriseStr = moontimes.rise.getHours() + ':' + moontimes.rise.getMinutes();
+  var moonsetStr = "error"; // moontimes.set.getHours() + ':' + moontimes.rise.getMinutes(); // moontimes.set.getHours() + ':' + moontimes.set.getMinutes();
+
+  var lunarMonth = 29.5; // average for lunar month is about 29.5 days.
+  var moonIllum = SunCalc.getMoonIllumination(new Date());
+  var moonfractionStr = Number((moonIllum.fraction*100).toFixed(2)) + '%';
+  var moonphaseStr = moonIllum.phase; // age of moon
+  var moonAgeStr = Number((moonIllum.phase * lunarMonth).toFixed(1)) + ' days';
+  var moonangleStr = moonIllum.angle;
+
+  var moonPosition = SunCalc.getMoonPosition(currentTime, myLat, myLon);
+  var moonAltitude = moonPosition.altitude;
+  var moonAzimuth = moonPosition.azimuth;
+  var moonAzimuthDeg = moonPosition.azimuth * 180/Math.PI;
+
+/*
+  document.getElementById("dateToday").innerHTML = today; // from today.js
+  // show today's sun information
+  // document.getElementById("sunrise").innerHTML = "Sunrise: " + sunriseStr; // from helper.js
+  // document.getElementById("sunset").innerHTML = "Sunset: " + sunsetStr; // from helper.js
+  document.getElementById("sunAltitude").innerHTML = "Altitude: " + sunAltitude;
+  document.getElementById("sunAzimuth").innerHTML = "Azimuth: " + sunAzimuth + " | " + sunAzimuthDeg;
+  document.getElementById('sunriseAzimuth').innerHTML = "Sunrise Azimuth: " + sunriseAzimuth + " | " + sunriseAzimuthDeg;
+  document.getElementById("sunsetAzimuth").innerHTML = "Sunset Azimuth: " + sunsetAzimuth + " | " + sunsetAzimuthDeg;
+
+
+  // show today's moon information
+  //document.getElementById('moonrise').innerHTML = "Moonrise: " + moonriseStr;
+  //document.getElementById('moonset').innerHTML = "Moonset: " + moonsetStr;
+  document.getElementById('moonAltitude').innerHTML = "Moon Altitude: " + moonAltitude;
+  document.getElementById('moonAzimuth').innerHTML = "Moon Azimuth: " + moonAzimuth + " | " + moonAzimuthDeg;
+*/
+	var t = new Date();
+
+  // set hands
+	handData[0].value = sunAzimuthDeg;      // sun pointer
+	handData[1].value = moonAzimuthDeg;     // moon pointer
+
+  // dummy data for planet positions for 17:28:54 Sept 19, 2020
+	handData[2].value = 232.9-180;             // mercury pointer
+  handData[3].value = 294.3-180;              // venus pointer
+  handData[4].value = 47.5-180;               // mars pointer
+  handData[5].value = 139.6-180;                // jupiter pointer
+  handData[6].value = 132.2-180;                // saturn pointer
+  handData[7].value = 32.2-180;                // uranus pointer
+  handData[8].value = 85-180;                // neptune pointer
+  // handData[9].value = 135.2;                // pluto pointer
+  //handData[10].value = sunriseAzimuthDeg; // sunrise pointer
+  //handData[11].value = sunsetAzimuthDeg; // sunset pointer
+}
+
+drawClock();
+
+// should update once a second
+setInterval(function(){
+	updateData();
+	moveHands();
+}, 1000);
+
+d3.select(self.frameElement).style("height", height + "px");
+
+</script>
+
+</head>
+<body>
+    <div class="container">
+        <!-- This is where we're going to add content with the CSS selector "#content". -->
+        <div id="content">
+    <div id="headerArea">
+      <div id="myHeadline">Planet-ock</div>
+      <div id ="subhead">Location of the planets in the sky right now!</div>
+      <div id="dateToday"></div>
+      <div id="coords">
+        <div id="latitude"></div> <div id="longitude">40.3428° N, 105.6836° W</div>
+      </div><!-- end coords -->
+    </div> <!-- end headerArea -->
+  </div><!-- end content -->
+  </div> <!-- end main container -->
+
+</body>
+</html>

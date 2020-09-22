@@ -1,0 +1,180 @@
+<html xmlns="html">
+    <head>
+        <title>Creative Coding Fall 2020 - Project3</title>
+        <meta charset="utf-8">
+		<!-- CSS -->
+		<link href="clock.css" rel="stylesheet">
+
+    <!-- libraries -->
+    <script type="text/javascript" src="js/d3.js"></script>
+
+	<!-- my code libraries -->
+    <script type="text/javascript" src="js/today.js"></script>
+    <script type="text/javascript" src="js/suncalc.js"></script>
+    <script type="text/javascript" src="js/helper.js"></script>
+
+
+		<script type="text/javascript">
+			// automatically populating lat/lon on page load
+			// load up all values on page load
+			window.onload = function() {
+
+        var radians = 0.0174532925;
+        var clockRadius = 300; // size of clo
+        var margin = 50;
+        var width = (clockRadius+margin)*2;
+        var height = (clockRadius+margin)*2;
+        var sunHandLength = 2 * clockRadius;
+        var moonHandLength = 2 * clockRadius;
+
+			  var startPos;
+			  navigator.geolocation.getCurrentPosition(function(position) {
+				var startPos = position;
+				var d = new Date();
+				var autoLat = parseFloat(startPos.coords.latitude, 7);
+				var autoLon = parseFloat(startPos.coords.longitude, 7);
+				// var autoOffset = (d.getTimezoneOffset()/60);
+				var autoOffset = moment.tz.guess();
+				console.log("offset: " + autoOffset); // offset in minutes/60 to give hours
+				document.getElementById('latitude').value = autoLat;
+				document.getElementById('longitude').value = autoLon;
+
+			  });
+
+			// set latitude and longitude; eventually these will come from getCurrentPosition above...automatic geocoding
+			var myLat = 40.3428;
+			var myLon = -105.6836;
+			var myUTC = -7;
+
+			// current time
+			var currentTime = new Date();
+
+			// sun information
+			var times = SunCalc.getTimes(new Date(), myLat, myLon);
+			var sunPosition = SunCalc.getPosition(currentTime, myLat, myLon);
+      var sunrisePos = SunCalc.getPosition(times.sunrise, myLat, myLon);
+      var sunsetPos = SunCalc.getPosition(times.sunset, myLat, myLon);
+			var sunAltitude = sunPosition.altitude; // current sun altitude above the horizon in radians; 0 = horizon; PI/2 = zenith;
+			var sunAzimuth = sunPosition.azimuth; // current sun azimuth position in radians 0 = south; math.PI * 3/4 = NW
+      var sunAzimuthDeg = sunPosition.azimuth * 180/Math.PI; // current sun azimuth position in radians 0 = south; math.PI * 3/4 = NW
+      var sunriseAzimuth = sunrisePos.azimuth; // sunrise azimuth in degrees
+      var sunriseAzimuthDeg = sunrisePos.azimuth * 180/Math.PI; // sunrise azimuth in degrees
+      var sunsetAzimuth = sunsetPos.azimuth; // sunset azimuth in degrees
+      var sunsetAzimuthDeg = sunsetPos.azimuth * 180/Math.PI; // sunset azimuth in degrees
+
+			// moon information
+			var moontimes = SunCalc.getMoonTimes(new Date(), myLat, myLon, myUTC);
+			var moonriseStr = moontimes.rise.getHours() + ':' + moontimes.rise.getMinutes();
+			var moonsetStr = "error"; // moontimes.set.getHours() + ':' + moontimes.rise.getMinutes(); // moontimes.set.getHours() + ':' + moontimes.set.getMinutes();
+
+			var lunarMonth = 29.5; // average for lunar month is about 29.5 days.
+			var moonIllum = SunCalc.getMoonIllumination(new Date());
+			var moonfractionStr = Number((moonIllum.fraction*100).toFixed(2)) + '%';
+			var moonphaseStr = moonIllum.phase; // age of moon
+			var moonAgeStr = Number((moonIllum.phase * lunarMonth).toFixed(1)) + ' days';
+			var moonangleStr = moonIllum.angle;
+
+			var moonPosition = SunCalc.getMoonPosition(currentTime, myLat, myLon);
+			var moonAltitude = moonPosition.altitude;
+      var moonAzimuth = moonPosition.azimuth;
+			var moonAzimuthDeg = moonPosition.azimuth * 180/Math.PI;
+
+			document.getElementById("dateToday").innerHTML = today; // from today.js
+			// show today's sun information
+			// document.getElementById("sunrise").innerHTML = "Sunrise: " + sunriseStr; // from helper.js
+			// document.getElementById("sunset").innerHTML = "Sunset: " + sunsetStr; // from helper.js
+			document.getElementById("sunAltitude").innerHTML = "Altitude: " + sunAltitude;
+			document.getElementById("sunAzimuth").innerHTML = "Azimuth: " + sunAzimuth + " | " + sunAzimuthDeg;
+      document.getElementById('sunriseAzimuth').innerHTML = "Sunrise Azimuth: " + sunriseAzimuth + " | " + sunriseAzimuthDeg;
+      document.getElementById("sunsetAzimuth").innerHTML = "Sunset Azimuth: " + sunsetAzimuth + " | " + sunsetAzimuthDeg;
+
+
+			// show today's moon information
+			//document.getElementById('moonrise').innerHTML = "Moonrise: " + moonriseStr;
+			//document.getElementById('moonset').innerHTML = "Moonset: " + moonsetStr;
+			document.getElementById('moonAltitude').innerHTML = "Moon Altitude: " + moonAltitude;
+			document.getElementById('moonAzimuth').innerHTML = "Moon Azimuth: " + moonAzimuth + " | " + moonAzimuthDeg;
+
+
+      function drawClock() {
+
+        // draw the svg container
+        var svg = d3.select("body").append("svg")
+      	    .attr("width", width)
+      	    .attr("height", height);
+
+        // draw the outer clock face
+        var face = svg.append("g")
+              .attr("id", "clock-face")
+              .attr("transform", `translate(${[width / 2, height / 2]})`);
+
+          face.append('g').attr('id','face-overlay')
+        		.append('circle').attr('class','clock-face')
+        			.attr('x',0)
+        			.attr('y',0)
+        			.attr('r',clockRadius)
+              .attr('fill', 'orange');
+
+
+          face.append('g').attr('id','face-overlay')
+        		.append('circle').attr('class','hands-cover')
+        			.attr('x',0)
+        			.attr('y',0)
+        			.attr('r',clockRadius/20);
+
+      }
+
+      function updateData(){
+      	var t = new Date();
+      	// handData[0].value = // sun position
+      	// handData[1].value = // moon position
+      }
+
+      drawClock();
+
+      // how often do we want it to update - once per second (1000ms)
+      setInterval(function(){
+      	// updateData(); // grab new data
+      	// moveHands(); // update positions
+      }, 1000);
+
+		};
+		</script>
+
+
+
+    </head>
+    <body>
+        <div class="container">
+            <!-- This is where we're going to add content with the CSS selector "#content". -->
+            <div id="content">
+				<div id="headerArea">
+					<div id="myHeadline">Celestial Clock</div>
+					<div id="dateToday"></div>
+					<div id="coords">
+						<div id="latitude"></div> <div id="longitude">40.3428° N, 105.6836° W</div>
+					</div><!-- end coords -->
+				</div> <!-- end headerArea -->
+					<div id="astroInfo">
+            <h3>Sun Information</h3>
+    					<div id="sunrise"></div>
+    					<div id="sunset"></div>
+    					<div id="sunAltitude"></div>
+    					<div id="sunAzimuth"></div>
+              <div id="sunriseAzimuth"></div>
+              <div id="sunsetAzimuth"></div>
+
+					  <h3>Moon Information</h3>
+    					<div id="moonrise"></div>
+    					<div id="moonset"></div>
+    					<div id="moonAltitude"></div>
+    					<div id="moonAzimuth"></div>
+					</div>
+
+
+
+			</div><!-- end content -->
+      </div> <!-- end main container -->
+
+    </body>
+</html>

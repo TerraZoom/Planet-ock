@@ -1,0 +1,65 @@
+body { background: #fff; }
+h3 { padding-top: 15px; }
+.container { width:100%; height: 100%; margin: 0px;  }
+#content { background: #fff; width:100%; height: 100%; margin: 20px 20px 0 0px; }
+#headerArea { background: #fff; padding: 10px 20px; }
+#myHeadline { color:#000; font-size: 70px; }
+#dateToday { color:#000; font-family: sans-serif; }
+#coords { color:#000; font-family: sans-serif; }
+#clock-face {  }
+#face-overlay { stroke: 2px; stroke-color:#00ff00; color: #00ff00; }
+
+#rim {
+  fill: none;
+  stroke: #999;
+  stroke-width: 3px;
+}
+
+.second-hand{
+	stroke-width:3;
+}
+
+.minute-hand{
+	stroke-width:8;
+	stroke-linecap:round;
+}
+
+.hour-hand{
+	stroke-width:12;
+	stroke-linecap:round;
+}
+
+.hands-cover{
+	stroke-width:3;
+	fill:#fff;
+}
+
+.second-tick{
+	stroke-width:1;
+	fill:#000;
+}
+
+.hour-tick{
+	stroke-width:1; //same as the miute hand
+}
+
+.second-label{
+	font-size: 12px;
+}
+
+.hour-label{
+	font-size: 24px;
+}
+
+svg{ color: #e1e1e1; stroke: #000; stroke-width: 1px; font-family:"HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue" }
+#rim { }
+.sun-hand { stroke-width: 20; stroke-linecap: round; stroke: #ffe100; }
+.moon-hand { stroke-width: 15; stroke-linecap: round; stroke: #e1e1e1; }
+.mercury-hand { stroke-width: 6; stroke-linecap: round; stroke: #8b5e3c; }
+.venus-hand { stroke-width: 6; stroke-linecap: round; stroke: #fff; }
+.mars-hand { stroke-width: 6; stroke-linecap: round; stroke: #be1e2d; }
+.jupiter-hand { stroke-width: 6; stroke-linecap: round; stroke: #f15a29; }
+.saturn-hand { stroke-width: 6; stroke-linecap: round; stroke: #f7941d; }
+.uranus-hand { stroke-width: 6; stroke-linecap: round; stroke: #8dc63f; }
+.neptune-hand { stroke-width: 6; stroke-linecap: round; stroke: #1c75bc; }
+.pluto-hand { stroke-width: 6; stroke-linecap: round; stroke: #000; }
